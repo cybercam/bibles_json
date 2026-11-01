@@ -42,6 +42,20 @@ def split_bible(src, out_root):
     out = os.path.join(out_root, 'chapters', version)
     shutil.rmtree(out, ignore_errors=True)
     index = []
+    # Already-normalized files: {"books": [{"b": 1, "n": "Genesis", "ch": [{"c": 1, "v": {...}}]}]}
+    if isinstance(raw, dict) and isinstance(raw.get('books'), list):
+        for book in raw['books']:
+            b = int(book.get('b'))
+            count = 0
+            for ch in book.get('ch') or []:
+                c = int(ch.get('c'))
+                v = {str(k): str(t).strip() for k, t in (ch.get('v') or {}).items() if str(t or '').strip()}
+                write_json(os.path.join(out, str(b), f'{c}.json'), {'b': b, 'n': book.get('n'), 'c': c, 'v': v})
+                count = max(count, c)
+            index.append({'b': b, 'n': book.get('n'), 'chapters': count})
+        index.sort(key=lambda x: x['b'])
+        write_json(os.path.join(out, 'index.json'), index)
+        return version, len(index)
     for seq, (book_key, chapters) in enumerate(raw.items(), start=1):
         m = re.match(r'^Book(\d+)$', book_key, re.I)
         b = int(m.group(1)) if m else ENGLISH_BOOK_NUM.get(book_key, seq)
