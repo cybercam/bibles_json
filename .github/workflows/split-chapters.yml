@@ -3,7 +3,7 @@ name: Split chapters
 on:
   push:
     branches: [main]
-    paths: ['bible_*.json', 'crossrefs_mobile.json', 'scripts/split_chapters.py']
+    paths: ['bible_*.json', 'scripts/split_chapters.py']
   workflow_dispatch:
 
 permissions:
@@ -14,13 +14,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Get crossrefs from the app repo
-        run: curl -sfL -o crossrefs_mobile.json https://raw.githubusercontent.com/cybercam/biblestudywithsteffi/main/src/data/crossrefs_mobile.json || true
-      - run: python3 scripts/split_chapters.py --crossrefs crossrefs_mobile.json
+      # crossrefs/ is committed once (its source is in the private app repo and rarely changes).
+      - run: python3 scripts/split_chapters.py
       - name: Commit generated files
         run: |
-          rm -f crossrefs_mobile.json
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add chapters crossrefs
+          git add chapters
           git diff --cached --quiet || git commit -m "Regenerate per-chapter files" && git push
